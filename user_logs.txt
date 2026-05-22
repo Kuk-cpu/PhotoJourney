@@ -1,0 +1,3 @@
+Sydney,Street,5,Night lights
+Sydney,3,3,city
+Sydney,Sea,4,sunrise,
