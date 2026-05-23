@@ -1,1 +1,3 @@
 Sydney:good
+tokyo:Amazing atmosphere
+tokyo:amazing

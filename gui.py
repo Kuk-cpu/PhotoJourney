@@ -1,6 +1,37 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 from PIL import Image, ImageTk
+import os
+
+
+# ====================================
+# PHOTOLOG CLASS
+# ====================================
+
+class PhotoLog:
+
+    def __init__(
+        self,
+        location,
+        theme,
+        rating,
+        description,
+        image_path
+    ):
+
+        self.location = location
+        self.theme = theme
+        self.rating = rating
+        self.description = description
+        self.image_path = image_path
+
+    def summary(self):
+
+        return (
+            f"{self.location} | "
+            f"{self.theme} | "
+            f"{self.rating}"
+        )
 
 
 # ====================================
@@ -25,6 +56,37 @@ def validate_rating(rating):
         raise ValueError("Rating must be between 1 and 5.")
 
     return rating
+
+
+# ====================================
+# RECURSIVE IMAGE COUNTER
+# ====================================
+
+def count_images_recursively(folder):
+
+    total = 0
+
+    try:
+
+        items = os.listdir(folder)
+
+        for item in items:
+
+            path = os.path.join(folder, item)
+
+            if os.path.isdir(path):
+
+                total += count_images_recursively(path)
+
+            elif item.endswith((".jpg", ".png", ".jpeg")):
+
+                total += 1
+
+    except:
+
+        return 0
+
+    return total
 
 
 # ====================================
@@ -88,16 +150,68 @@ def save_comment(location, comment):
 
 
 # ====================================
-# GUI WINDOW
+# MAIN WINDOW
 # ====================================
 
 window = tk.Tk()
 
 window.title("PhotoJourney")
 
-window.geometry("1250x900")
+window.geometry("1400x1000")
 
 window.configure(bg="#f4f1ea")
+
+window.resizable(True, True)
+
+
+# ====================================
+# SCROLLABLE CANVAS
+# ====================================
+
+main_canvas = tk.Canvas(
+    window,
+    bg="#f4f1ea",
+    highlightthickness=0
+)
+
+scrollbar = ttk.Scrollbar(
+    window,
+    orient="vertical",
+    command=main_canvas.yview
+)
+
+scrollable_frame = tk.Frame(
+    main_canvas,
+    bg="#f4f1ea"
+)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: main_canvas.configure(
+        scrollregion=main_canvas.bbox("all")
+    )
+)
+
+main_canvas.create_window(
+    (0, 0),
+    window=scrollable_frame,
+    anchor="nw"
+)
+
+main_canvas.configure(
+    yscrollcommand=scrollbar.set
+)
+
+main_canvas.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+scrollbar.pack(
+    side="right",
+    fill="y"
+)
 
 
 # ====================================
@@ -105,7 +219,7 @@ window.configure(bg="#f4f1ea")
 # ====================================
 
 title = tk.Label(
-    window,
+    scrollable_frame,
     text="PhotoJourney",
     font=("Helvetica", 38, "bold"),
     bg="#f4f1ea",
@@ -115,7 +229,7 @@ title = tk.Label(
 title.pack(pady=10)
 
 subtitle = tk.Label(
-    window,
+    scrollable_frame,
     text="Capturing Places, Understanding Perspectives",
     font=("Helvetica", 15, "italic"),
     bg="#f4f1ea",
@@ -130,7 +244,7 @@ subtitle.pack(pady=5)
 # ====================================
 
 input_frame = tk.Frame(
-    window,
+    scrollable_frame,
     bg="#f4f1ea"
 )
 
@@ -242,11 +356,11 @@ description_entry.grid(row=3, column=1)
 # ====================================
 
 image_label = tk.Label(
-    window,
+    scrollable_frame,
     bg="#f4f1ea"
 )
 
-image_label.pack(pady=10)
+image_label.pack(pady=15)
 
 
 # ====================================
@@ -254,8 +368,8 @@ image_label.pack(pady=10)
 # ====================================
 
 output_text = tk.Text(
-    window,
-    width=100,
+    scrollable_frame,
+    width=110,
     height=16,
     font=("Helvetica", 11),
     bg="white",
@@ -282,11 +396,8 @@ output_text.insert(
 def clear_inputs():
 
     location_entry.delete(0, tk.END)
-
     theme_entry.delete(0, tk.END)
-
     rating_entry.delete(0, tk.END)
-
     description_entry.delete(0, tk.END)
 
 
@@ -312,7 +423,7 @@ def choose_image():
 
         image = Image.open(file_path)
 
-        image = image.resize((400, 250))
+        image = image.resize((600, 400))
 
         preview_image = ImageTk.PhotoImage(image)
 
@@ -344,12 +455,20 @@ def add_log_gui():
 
         rating = validate_rating(rating)
 
-        save_log(
+        log = PhotoLog(
             location,
             theme,
             rating,
             description,
             selected_image_path
+        )
+
+        save_log(
+            log.location,
+            log.theme,
+            log.rating,
+            log.description,
+            log.image_path
         )
 
         share = messagebox.askyesno(
@@ -360,11 +479,11 @@ def add_log_gui():
         if share:
 
             save_shared_log(
-                location,
-                theme,
-                rating,
-                description,
-                selected_image_path
+                log.location,
+                log.theme,
+                log.rating,
+                log.description,
+                log.image_path
             )
 
         output_text.delete("1.0", tk.END)
@@ -390,11 +509,16 @@ def add_log_gui():
 
 def view_logs_gui():
 
-    output_text.delete("1.0", tk.END)
+    for widget in scrollable_frame.winfo_children():
+
+        if isinstance(widget, tk.Frame) and widget != input_frame and widget != button_frame:
+            widget.destroy()
 
     logs = load_logs()
 
     if len(logs) == 0:
+
+        output_text.delete("1.0", tk.END)
 
         output_text.insert(
             tk.END,
@@ -410,10 +534,48 @@ def view_logs_gui():
         if len(parts) < 5:
             continue
 
-        location, theme, rating, description, image = parts
+        location, theme, rating, description, image_path = parts
 
-        output_text.insert(
-            tk.END,
+        card = tk.Frame(
+            scrollable_frame,
+            bg="white",
+            bd=2,
+            relief="solid"
+        )
+
+        card.pack(
+            pady=15,
+            padx=20,
+            fill="x"
+        )
+
+        if os.path.exists(image_path):
+
+            try:
+
+                image = Image.open(image_path)
+
+                image = image.resize((300, 200))
+
+                photo = ImageTk.PhotoImage(image)
+
+                image_label_card = tk.Label(
+                    card,
+                    image=photo,
+                    bg="white"
+                )
+
+                image_label_card.image = photo
+
+                image_label_card.pack(pady=10)
+
+            except:
+
+                pass
+
+        info = tk.Label(
+            card,
+            text=
             f"""
 📍 Location: {location}
 
@@ -422,11 +584,16 @@ def view_logs_gui():
 ⭐ Rating: {rating}
 
 📝 Description: {description}
+""",
+            font=("Helvetica", 11),
+            bg="white",
+            justify="left"
+        )
 
-🖼️ Image: {image}
-
-----------------------------------------
-"""
+        info.pack(
+            padx=20,
+            pady=10,
+            anchor="w"
         )
 
 
@@ -455,6 +622,8 @@ def analyze_logs_gui():
 
     location_count = {}
 
+    total_images = 0
+
     for log in logs:
 
         parts = log.split(",")
@@ -467,6 +636,10 @@ def analyze_logs_gui():
         rating = int(rating)
 
         total_rating += rating
+
+        if image.strip() != "":
+
+            total_images += 1
 
         if theme in theme_count:
 
@@ -505,6 +678,8 @@ def analyze_logs_gui():
 
 📁 Total Logs: {len(logs)}
 
+🖼️ Total Images Uploaded: {total_images}
+
 ⭐ Average Rating: {average_rating:.2f}
 
 📸 Favorite Theme: {favorite_theme}
@@ -515,78 +690,25 @@ def analyze_logs_gui():
 """
     )
 
-    # ====================================
-    # PHOTOGRAPHY PERSONALITY SYSTEM
-    # ====================================
-
     if favorite_theme.lower() == "street":
 
         personality = "🎭 Street Storyteller"
-
-        personality_description = (
-            "You enjoy capturing human emotion, movement,\n"
-            "and cinematic urban moments."
-        )
-
-        recommendation = (
-            "Try exploring night street photography\n"
-            "or documentary-style storytelling."
-        )
 
     elif favorite_theme.lower() == "nature":
 
         personality = "🎭 Quiet Landscape Observer"
 
-        personality_description = (
-            "You are drawn to calm scenery, atmosphere,\n"
-            "and reflective visual storytelling."
-        )
-
-        recommendation = (
-            "Try sunrise landscape photography\n"
-            "or environmental compositions."
-        )
-
     elif favorite_theme.lower() == "food":
 
         personality = "🎭 Visual Experience Curator"
-
-        personality_description = (
-            "You appreciate detail, texture, colour,\n"
-            "and aesthetic presentation."
-        )
-
-        recommendation = (
-            "Experiment with café photography\n"
-            "and cinematic food compositions."
-        )
 
     elif favorite_theme.lower() == "architecture":
 
         personality = "🎭 Geometry Explorer"
 
-        personality_description = (
-            "You are fascinated by structure, symmetry,\n"
-            "and spatial storytelling."
-        )
-
-        recommendation = (
-            "Try minimalist architectural photography\n"
-            "and leading-line compositions."
-        )
-
     else:
 
         personality = "🎭 Creative Explorer"
-
-        personality_description = (
-            "You enjoy experimenting with different\n"
-            "perspectives and visual styles."
-        )
-
-        recommendation = (
-            "Continue exploring new themes and locations."
-        )
 
     output_text.insert(
         tk.END,
@@ -595,12 +717,6 @@ def analyze_logs_gui():
 🎭 Photography Personality
 
 {personality}
-
-{personality_description}
-
-📸 Recommendation
-
-{recommendation}
 
 ----------------------------------------
 """
@@ -615,7 +731,13 @@ def explore_locations_gui():
 
     output_text.delete("1.0", tk.END)
 
-    search_location = location_entry.get()
+    location_search = location_entry.get().lower()
+
+    theme_search = theme_entry.get().lower()
+
+    rating_search = rating_entry.get().lower()
+
+    description_search = description_entry.get().lower()
 
     found = False
 
@@ -632,14 +754,48 @@ def explore_locations_gui():
 
                 location, theme, rating, description, image = parts
 
-                if location.lower() == search_location.lower():
+                location_lower = location.lower()
+
+                theme_lower = theme.lower()
+
+                rating_lower = str(rating).lower()
+
+                description_lower = description.lower()
+
+                match = True
+
+                if location_search != "":
+
+                    if location_search not in location_lower:
+
+                        match = False
+
+                if theme_search != "":
+
+                    if theme_search not in theme_lower:
+
+                        match = False
+
+                if rating_search != "":
+
+                    if rating_search not in rating_lower:
+
+                        match = False
+
+                if description_search != "":
+
+                    if description_search not in description_lower:
+
+                        match = False
+
+                if match:
 
                     found = True
 
                     output_text.insert(
                         tk.END,
                         f"""
-🌍 Shared Log
+🌍 Shared Community Log
 
 📍 Location: {location}
 
@@ -659,7 +815,7 @@ def explore_locations_gui():
 
             output_text.insert(
                 tk.END,
-                "No shared logs found for this location."
+                "No matching shared logs found."
             )
 
     except FileNotFoundError:
@@ -695,8 +851,26 @@ def add_comment_gui():
 
     output_text.insert(
         tk.END,
-        "💬 Comment added successfully!"
+        "💬 Comment Added Successfully!\n\n"
     )
+
+    try:
+
+        with open("comments.txt", "r") as file:
+
+            for line in file:
+
+                output_text.insert(
+                    tk.END,
+                    f"{line}\n"
+                )
+
+    except FileNotFoundError:
+
+        output_text.insert(
+            tk.END,
+            "No comments found."
+        )
 
 
 # ====================================
@@ -704,7 +878,7 @@ def add_comment_gui():
 # ====================================
 
 button_frame = tk.Frame(
-    window,
+    scrollable_frame,
     bg="#f4f1ea"
 )
 
@@ -712,7 +886,7 @@ button_frame.pack(pady=20)
 
 
 # ====================================
-# BUTTON STYLES
+# BUTTON STYLE
 # ====================================
 
 style = ttk.Style()
@@ -720,48 +894,8 @@ style = ttk.Style()
 style.theme_use("clam")
 
 style.configure(
-    "Blue.TButton",
+    "Custom.TButton",
     background="#457b9d",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-style.configure(
-    "Green.TButton",
-    background="#588157",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-style.configure(
-    "Orange.TButton",
-    background="#e76f51",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-style.configure(
-    "Purple.TButton",
-    background="#6d597a",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-style.configure(
-    "Pink.TButton",
-    background="#b56576",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-style.configure(
-    "Dark.TButton",
-    background="#264653",
     foreground="white",
     font=("Helvetica", 11, "bold"),
     padding=10
@@ -775,57 +909,52 @@ style.configure(
 add_button = ttk.Button(
     button_frame,
     text="Add Log",
-    style="Blue.TButton",
+    style="Custom.TButton",
     command=add_log_gui
 )
 
 add_button.grid(row=0, column=0, padx=10)
 
-
 view_button = ttk.Button(
     button_frame,
     text="View Logs",
-    style="Green.TButton",
+    style="Custom.TButton",
     command=view_logs_gui
 )
 
 view_button.grid(row=0, column=1, padx=10)
 
-
 analyze_button = ttk.Button(
     button_frame,
     text="Analyze",
-    style="Orange.TButton",
+    style="Custom.TButton",
     command=analyze_logs_gui
 )
 
 analyze_button.grid(row=0, column=2, padx=10)
 
-
 explore_button = ttk.Button(
     button_frame,
     text="Explore",
-    style="Purple.TButton",
+    style="Custom.TButton",
     command=explore_locations_gui
 )
 
 explore_button.grid(row=0, column=3, padx=10)
 
-
 comment_button = ttk.Button(
     button_frame,
     text="Add Comment",
-    style="Pink.TButton",
+    style="Custom.TButton",
     command=add_comment_gui
 )
 
 comment_button.grid(row=0, column=4, padx=10)
 
-
 image_button = ttk.Button(
     button_frame,
     text="Choose Photo",
-    style="Dark.TButton",
+    style="Custom.TButton",
     command=choose_image
 )
 
@@ -833,7 +962,24 @@ image_button.grid(row=0, column=5, padx=10)
 
 
 # ====================================
-# RUN WINDOW
+# MOUSE WHEEL SCROLL
+# ====================================
+
+def _on_mousewheel(event):
+
+    main_canvas.yview_scroll(
+        int(-1 * (event.delta / 120)),
+        "units"
+    )
+
+main_canvas.bind_all(
+    "<MouseWheel>",
+    _on_mousewheel
+)
+
+
+# ====================================
+# RUN APP
 # ====================================
 
 window.mainloop()
