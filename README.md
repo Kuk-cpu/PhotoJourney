@@ -1,31 +1,40 @@
 # PhotoJourney
 
-PhotoJourney is an interactive photography travel journal built with Python and Tkinter.
+PhotoJourney is a Python travel photography journal application built using Tkinter and Pillow.
 
-The application allows users to:
-
+The program allows users to:
 - Upload travel photos
 - Record photography experiences
-- Analyse photography habits
-- Explore shared perspectives from other users
-- Generate photography personality insights
+- Analyze photography habits
+- Explore shared travel logs
+- Add comments to locations
 
-## Features
+---
 
-- GUI application using Tkinter
-- File Input and Output
-- Image Upload System
-- Data Analysis
-- Validation and Error Handling
-- Community Sharing Feature
-- Photography Personality System
+# Features
 
-## Technologies Used
+- Add travel photography logs
+- Upload and preview images
+- Save photography experiences
+- Analyze photography habits
+- Explore shared community logs
+- Add comments to locations
+- Scrollable graphical user interface
+- Search logs by keywords
+- Store data using text files
+
+---
+
+# Technologies Used
 
 - Python
 - Tkinter
 - Pillow (PIL)
+- File Handling
+- Object-Oriented Programming
+
+---
 
 ## Author
 
-COMP9001 Final Project
+COMP9001 Final Project -- Huiyuan Ju
