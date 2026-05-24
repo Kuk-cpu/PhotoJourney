@@ -1,3 +1,5 @@
 Sydney:good
 tokyo:Amazing atmosphere
 tokyo:amazing
+paris:romantic place
+paris:Hope to go Paris with my girl.

@@ -4,3 +4,7 @@ Sydney,Sea,4,sunrise,
 Sydney,tree,5,autumn,
 Mel,street,3,,
 Tokyo,fireworks,5,summer,/private/var/folders/1r/_vttfk7n1cx_4qnqz2v61jvh0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=FA0AFEB8-0D8D-4857-A90F-932524158335&code=001&library=1&type=1&mode=1&loc=true&cap=true.jpeg/IMG_6416.jpeg
+Santorini,Sunset,4,Beautiful white houses and ocean view during sunset.,/Users/jhy/Downloads/ChatGPT Image 2026年5月24日 14_35_51.png
+Kyoto,Street Photography,4,Traditional Japanese streets with warm lantern lights.,/Users/jhy/Downloads/ChatGPT Image 2026年5月24日 14_35_54.png
+Paris,Architecture,5,Captured the Eiffel Tower at night with city lights.,/Users/jhy/Downloads/ChatGPT Image 2026年5月24日 14_36_35.png
+Melbourne,Autumn Nature,4,Golden autumn leaves beside the Yarra River.,/Users/jhy/Downloads/ChatGPT Image 2026年5月24日 14_37_17.png

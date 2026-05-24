@@ -3,6 +3,7 @@ from tkinter import messagebox, filedialog, ttk
 from PIL import Image, ImageTk
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ====================================
 # PHOTOLOG CLASS
@@ -24,14 +25,6 @@ class PhotoLog:
         self.rating = rating
         self.description = description
         self.image_path = image_path
-
-    def summary(self):
-
-        return (
-            f"{self.location} | "
-            f"{self.theme} | "
-            f"{self.rating}"
-        )
 
 
 # ====================================
@@ -59,43 +52,12 @@ def validate_rating(rating):
 
 
 # ====================================
-# RECURSIVE IMAGE COUNTER
-# ====================================
-
-def count_images_recursively(folder):
-
-    total = 0
-
-    try:
-
-        items = os.listdir(folder)
-
-        for item in items:
-
-            path = os.path.join(folder, item)
-
-            if os.path.isdir(path):
-
-                total += count_images_recursively(path)
-
-            elif item.endswith((".jpg", ".png", ".jpeg")):
-
-                total += 1
-
-    except:
-
-        return 0
-
-    return total
-
-
-# ====================================
 # SAVE USER LOG
 # ====================================
 
 def save_log(location, theme, rating, description, image_path):
 
-    with open("user_logs.txt", "a") as file:
+    with open(os.path.join(BASE_DIR, "user_logs.txt"), "a") as file:
 
         file.write(
             f"{location},{theme},{rating},{description},{image_path}\n"
@@ -112,7 +74,7 @@ def load_logs():
 
     try:
 
-        with open("user_logs.txt", "r") as file:
+        with open(os.path.join(BASE_DIR, "user_logs.txt"), "r") as file:
 
             for line in file:
 
@@ -131,7 +93,7 @@ def load_logs():
 
 def save_shared_log(location, theme, rating, description, image_path):
 
-    with open("shared_logs.txt", "a") as file:
+    with open(os.path.join(BASE_DIR, "shared_logs.txt"), "a") as file:
 
         file.write(
             f"{location},{theme},{rating},{description},{image_path}\n"
@@ -144,7 +106,7 @@ def save_shared_log(location, theme, rating, description, image_path):
 
 def save_comment(location, comment):
 
-    with open("comments.txt", "a") as file:
+    with open(os.path.join(BASE_DIR, "comments.txt"), "a") as file:
 
         file.write(f"{location}:{comment}\n")
 
@@ -157,61 +119,73 @@ window = tk.Tk()
 
 window.title("PhotoJourney")
 
-window.geometry("1400x1000")
-
-window.configure(bg="#f4f1ea")
+window.geometry("1536x1024")
 
 window.resizable(True, True)
 
 
 # ====================================
-# SCROLLABLE CANVAS
+# CANVAS
 # ====================================
 
-main_canvas = tk.Canvas(
+canvas = tk.Canvas(
     window,
-    bg="#f4f1ea",
-    highlightthickness=0
+    highlightthickness=0,
+    bd=0
 )
 
-scrollbar = ttk.Scrollbar(
-    window,
-    orient="vertical",
-    command=main_canvas.yview
-)
-
-scrollable_frame = tk.Frame(
-    main_canvas,
-    bg="#f4f1ea"
-)
-
-scrollable_frame.bind(
-    "<Configure>",
-    lambda e: main_canvas.configure(
-        scrollregion=main_canvas.bbox("all")
-    )
-)
-
-main_canvas.create_window(
-    (0, 0),
-    window=scrollable_frame,
-    anchor="nw"
-)
-
-main_canvas.configure(
-    yscrollcommand=scrollbar.set
-)
-
-main_canvas.pack(
-    side="left",
+canvas.pack(
     fill="both",
     expand=True
 )
 
-scrollbar.pack(
-    side="right",
-    fill="y"
-)
+
+# ====================================
+# BACKGROUND IMAGE
+# ====================================
+
+bg_path = os.path.join(BASE_DIR, "santorini.jpg")
+
+original_bg = Image.open(bg_path)
+
+
+def resize_background(event=None):
+
+    width = max(window.winfo_width(), 1536)
+
+    height = max(window.winfo_height(), 1024)
+
+    resized = original_bg.resize((width, height))
+
+    bg_photo = ImageTk.PhotoImage(resized)
+
+    canvas.bg_photo = bg_photo
+
+    canvas.delete("bg")
+
+    canvas.create_image(
+        0,
+        0,
+        image=bg_photo,
+        anchor="nw",
+        tags="bg"
+    )
+
+    canvas.tag_lower("bg")
+
+
+window.bind("<Configure>", resize_background)
+
+
+# ====================================
+# COLORS
+# ====================================
+
+TRANSPARENT_BG = "#2d4059"
+
+CARD_BG = "#f4ede4"
+
+TEXT_COLOR = "#1d3557"
 
 
 # ====================================
@@ -219,148 +193,323 @@ scrollbar.pack(
 # ====================================
 
 title = tk.Label(
-    scrollable_frame,
+    canvas,
     text="PhotoJourney",
-    font=("Helvetica", 38, "bold"),
-    bg="#f4f1ea",
-    fg="#1d3557"
+    font=("Snell Roundhand", 60, "bold"),
+    bg=TRANSPARENT_BG,
+    fg="white",
+    padx=20,
+    pady=8
 )
 
-title.pack(pady=10)
-
-subtitle = tk.Label(
-    scrollable_frame,
-    text="Capturing Places, Understanding Perspectives",
-    font=("Helvetica", 15, "italic"),
-    bg="#f4f1ea",
-    fg="#555555"
+canvas.create_window(
+    770,
+    75,
+    window=title
 )
-
-subtitle.pack(pady=5)
 
 
 # ====================================
-# INPUT FRAME
+# SUBTITLE
+# ====================================
+
+subtitle = tk.Label(
+    canvas,
+    text="Every Place Has a Story.",
+    font=("Times New Roman", 22, "italic"),
+    bg=TRANSPARENT_BG,
+    fg="white",
+    padx=15,
+    pady=5
+)
+
+canvas.create_window(
+    770,
+    140,
+    window=subtitle
+)
+
+
+# ====================================
+# WELCOME BOX
+# ====================================
+
+welcome_box = tk.Label(
+    canvas,
+    text=(
+        "☀️ Welcome to PhotoJourney!\n\n"
+        "Capture moments.\n"
+        "Explore perspectives.\n"
+        "Remember forever.\n\n"
+        "❤️"
+    ),
+    font=("Helvetica", 11),
+    bg=CARD_BG,
+    fg=TEXT_COLOR,
+    justify="left",
+    padx=18,
+    pady=18
+)
+
+canvas.create_window(
+    230,
+    175,
+    window=welcome_box
+)
+
+
+# ====================================
+# INPUT CARD
 # ====================================
 
 input_frame = tk.Frame(
-    scrollable_frame,
-    bg="#f4f1ea"
+    canvas,
+    bg=CARD_BG,
+    padx=28,
+    pady=24
 )
 
-input_frame.pack(pady=15)
+canvas.create_window(
+    560,
+    420,
+    window=input_frame
+)
+
+
+# ====================================
+# ENTRY STYLE
+# ====================================
+
+def create_entry():
+
+    entry = tk.Entry(
+        input_frame,
+        width=26,
+        font=("Helvetica", 11),
+        bg="white",
+        fg=TEXT_COLOR,
+        relief="flat",
+        bd=0,
+        insertbackground=TEXT_COLOR,
+        highlightthickness=1,
+        highlightbackground="#d9c5ae",
+        highlightcolor="#d9c5ae"
+    )
+
+    return entry
+
+
+# ====================================
+# LABEL STYLE
+# ====================================
+
+def create_label(text):
+
+    return tk.Label(
+        input_frame,
+        text=text,
+        font=("Helvetica", 11, "bold"),
+        bg=CARD_BG,
+        fg=TEXT_COLOR
+    )
 
 
 # ====================================
 # LOCATION
 # ====================================
 
-location_label = tk.Label(
-    input_frame,
-    text="Location:",
-    font=("Helvetica", 12, "bold"),
-    bg="#f4f1ea",
-    fg="#333333"
+location_label = create_label("Location:")
+
+location_label.grid(
+    row=0,
+    column=0,
+    padx=8,
+    pady=10,
+    sticky="e"
 )
 
-location_label.grid(row=0, column=0, padx=10, pady=10)
+location_entry = create_entry()
 
-location_entry = tk.Entry(
-    input_frame,
-    width=35,
-    font=("Helvetica", 11),
-    relief="flat",
-    bd=4
+location_entry.grid(
+    row=0,
+    column=1,
+    ipady=5
 )
-
-location_entry.grid(row=0, column=1)
 
 
 # ====================================
 # THEME
 # ====================================
 
-theme_label = tk.Label(
-    input_frame,
-    text="Photography Theme:",
-    font=("Helvetica", 12, "bold"),
-    bg="#f4f1ea",
-    fg="#333333"
+theme_label = create_label("Photography Theme:")
+
+theme_label.grid(
+    row=1,
+    column=0,
+    padx=8,
+    pady=10,
+    sticky="e"
 )
 
-theme_label.grid(row=1, column=0, padx=10, pady=10)
+theme_entry = create_entry()
 
-theme_entry = tk.Entry(
-    input_frame,
-    width=35,
-    font=("Helvetica", 11),
-    relief="flat",
-    bd=4
+theme_entry.grid(
+    row=1,
+    column=1,
+    ipady=5
 )
-
-theme_entry.grid(row=1, column=1)
 
 
 # ====================================
 # RATING
 # ====================================
 
-rating_label = tk.Label(
-    input_frame,
-    text="Rating (1-5):",
-    font=("Helvetica", 12, "bold"),
-    bg="#f4f1ea",
-    fg="#333333"
+rating_label = create_label("Rating (1-5):")
+
+rating_label.grid(
+    row=2,
+    column=0,
+    padx=8,
+    pady=10,
+    sticky="e"
 )
 
-rating_label.grid(row=2, column=0, padx=10, pady=10)
+rating_entry = create_entry()
 
-rating_entry = tk.Entry(
-    input_frame,
-    width=35,
-    font=("Helvetica", 11),
-    relief="flat",
-    bd=4
+rating_entry.grid(
+    row=2,
+    column=1,
+    ipady=5
 )
-
-rating_entry.grid(row=2, column=1)
 
 
 # ====================================
 # DESCRIPTION
 # ====================================
 
-description_label = tk.Label(
-    input_frame,
-    text="Description:",
-    font=("Helvetica", 12, "bold"),
-    bg="#f4f1ea",
-    fg="#333333"
+description_label = create_label("Description:")
+
+description_label.grid(
+    row=3,
+    column=0,
+    padx=8,
+    pady=10,
+    sticky="e"
 )
 
-description_label.grid(row=3, column=0, padx=10, pady=10)
+description_entry = create_entry()
 
-description_entry = tk.Entry(
-    input_frame,
-    width=35,
-    font=("Helvetica", 11),
-    relief="flat",
-    bd=4
+description_entry.grid(
+    row=3,
+    column=1,
+    ipady=5
 )
-
-description_entry.grid(row=3, column=1)
 
 
 # ====================================
-# IMAGE PREVIEW
+# BUTTON STYLE
 # ====================================
 
-image_label = tk.Label(
-    scrollable_frame,
-    bg="#f4f1ea"
+style = ttk.Style()
+
+style.theme_use("clam")
+
+style.configure(
+    "Custom.TButton",
+    background="#d8c3a5",
+    foreground=TEXT_COLOR,
+    font=("Helvetica", 10, "bold"),
+    padding=10,
+    borderwidth=0
 )
 
-image_label.pack(pady=15)
+style.map(
+    "Custom.TButton",
+    background=[("active", "#c8ae8d")]
+)
+
+
+# ====================================
+# BUTTONS
+# ====================================
+
+add_button = ttk.Button(
+    canvas,
+    text="Add Log",
+    style="Custom.TButton",
+    command=lambda: add_log_gui()
+)
+
+canvas.create_window(
+    480,
+    560,
+    window=add_button
+)
+
+view_button = ttk.Button(
+    canvas,
+    text="View Logs",
+    style="Custom.TButton",
+    command=lambda: view_logs_gui()
+)
+
+canvas.create_window(
+    620,
+    560,
+    window=view_button
+)
+
+analyze_button = ttk.Button(
+    canvas,
+    text="Analyze",
+    style="Custom.TButton",
+    command=lambda: analyze_logs_gui()
+)
+
+canvas.create_window(
+    480,
+    620,
+    window=analyze_button
+)
+
+explore_button = ttk.Button(
+    canvas,
+    text="Explore",
+    style="Custom.TButton",
+    command=lambda: explore_locations_gui()
+)
+
+canvas.create_window(
+    620,
+    620,
+    window=explore_button
+)
+
+comment_button = ttk.Button(
+    canvas,
+    text="Add Comment",
+    style="Custom.TButton",
+    command=lambda: add_comment_gui()
+)
+
+canvas.create_window(
+    480,
+    680,
+    window=comment_button
+)
+
+image_button = ttk.Button(
+    canvas,
+    text="Choose Photo",
+    style="Custom.TButton",
+    command=lambda: choose_image()
+)
+
+canvas.create_window(
+    620,
+    680,
+    window=image_button
+)
 
 
 # ====================================
@@ -368,24 +517,66 @@ image_label.pack(pady=15)
 # ====================================
 
 output_text = tk.Text(
-    scrollable_frame,
-    width=110,
-    height=16,
+    canvas,
+    width=60,
+    height=24,
     font=("Helvetica", 11),
-    bg="white",
-    fg="#333333",
+    bg=CARD_BG,
+    fg=TEXT_COLOR,
     relief="flat",
-    bd=4,
-    padx=15,
-    pady=15
+    bd=0,
+    padx=22,
+    pady=22
 )
 
-output_text.pack(pady=20)
+canvas.create_window(
+    1000,
+    500,
+    window=output_text
+)
 
 output_text.insert(
     tk.END,
     "🌍 Welcome to PhotoJourney!\n\n"
     "Capture your travels and discover your photography perspective."
+)
+
+
+# ====================================
+# IMAGE PREVIEW
+# ====================================
+
+image_label = tk.Label(
+    canvas,
+    bg=CARD_BG,
+    bd=0
+)
+
+canvas.create_window(
+    320,
+    850,
+    window=image_label
+)
+
+
+# ====================================
+# QUOTE
+# ====================================
+
+quote_label = tk.Label(
+    canvas,
+    text="“We travel not to escape life, but for life not to escape us. ❤️”",
+    font=("Times New Roman", 18, "italic"),
+    bg=TRANSPARENT_BG,
+    fg="white",
+    padx=20,
+    pady=6
+)
+
+canvas.create_window(
+    770,
+    770,
+    window=quote_label
 )
 
 
@@ -423,7 +614,7 @@ def choose_image():
 
         image = Image.open(file_path)
 
-        image = image.resize((600, 400))
+        image = image.resize((320, 220))
 
         preview_image = ImageTk.PhotoImage(image)
 
@@ -509,16 +700,11 @@ def add_log_gui():
 
 def view_logs_gui():
 
-    for widget in scrollable_frame.winfo_children():
-
-        if isinstance(widget, tk.Frame) and widget != input_frame and widget != button_frame:
-            widget.destroy()
+    output_text.delete("1.0", tk.END)
 
     logs = load_logs()
 
     if len(logs) == 0:
-
-        output_text.delete("1.0", tk.END)
 
         output_text.insert(
             tk.END,
@@ -526,6 +712,8 @@ def view_logs_gui():
         )
 
         return
+
+    output_text.image_list = []
 
     for log in logs:
 
@@ -536,64 +724,55 @@ def view_logs_gui():
 
         location, theme, rating, description, image_path = parts
 
-        card = tk.Frame(
-            scrollable_frame,
-            bg="white",
-            bd=2,
-            relief="solid"
+        output_text.insert(
+            tk.END,
+            f"\n📍 Location: {location}\n"
         )
 
-        card.pack(
-            pady=15,
-            padx=20,
-            fill="x"
+        output_text.insert(
+            tk.END,
+            f"📸 Theme: {theme}\n"
+        )
+
+        output_text.insert(
+            tk.END,
+            f"⭐ Rating: {rating}\n"
+        )
+
+        output_text.insert(
+            tk.END,
+            f"📝 Description: {description}\n\n"
         )
 
         if os.path.exists(image_path):
 
             try:
 
-                image = Image.open(image_path)
+                img = Image.open(image_path)
 
-                image = image.resize((300, 200))
+                img = img.resize((350, 220))
 
-                photo = ImageTk.PhotoImage(image)
+                photo = ImageTk.PhotoImage(img)
 
-                image_label_card = tk.Label(
-                    card,
-                    image=photo,
-                    bg="white"
+                output_text.image_create(
+                    tk.END,
+                    image=photo
                 )
 
-                image_label_card.image = photo
+                output_text.image_list.append(photo)
 
-                image_label_card.pack(pady=10)
+                output_text.insert(
+                    tk.END,
+                    "\n\n"
+                )
 
             except:
 
                 pass
 
-        info = tk.Label(
-            card,
-            text=
-            f"""
-📍 Location: {location}
-
-📸 Theme: {theme}
-
-⭐ Rating: {rating}
-
-📝 Description: {description}
-""",
-            font=("Helvetica", 11),
-            bg="white",
-            justify="left"
-        )
-
-        info.pack(
-            padx=20,
-            pady=10,
-            anchor="w"
+        output_text.insert(
+            tk.END,
+            "────────────────────────────\n\n"
         )
 
 
@@ -641,21 +820,9 @@ def analyze_logs_gui():
 
             total_images += 1
 
-        if theme in theme_count:
+        theme_count[theme] = theme_count.get(theme, 0) + 1
 
-            theme_count[theme] += 1
-
-        else:
-
-            theme_count[theme] = 1
-
-        if location in location_count:
-
-            location_count[location] += 1
-
-        else:
-
-            location_count[location] = 1
+        location_count[location] = location_count.get(location, 0) + 1
 
     average_rating = total_rating / len(logs)
 
@@ -674,7 +841,7 @@ def analyze_logs_gui():
         f"""
 📊 Photography Analysis
 
-----------------------------------------
+────────────────────────────
 
 📁 Total Logs: {len(logs)}
 
@@ -686,137 +853,29 @@ def analyze_logs_gui():
 
 🌍 Most Visited Location: {favorite_location}
 
-----------------------------------------
-"""
-    )
-
-    if favorite_theme.lower() == "street":
-
-        personality = "🎭 Street Storyteller"
-
-    elif favorite_theme.lower() == "nature":
-
-        personality = "🎭 Quiet Landscape Observer"
-
-    elif favorite_theme.lower() == "food":
-
-        personality = "🎭 Visual Experience Curator"
-
-    elif favorite_theme.lower() == "architecture":
-
-        personality = "🎭 Geometry Explorer"
-
-    else:
-
-        personality = "🎭 Creative Explorer"
-
-    output_text.insert(
-        tk.END,
-        f"""
-
-🎭 Photography Personality
-
-{personality}
-
-----------------------------------------
+────────────────────────────
 """
     )
 
 
 # ====================================
-# EXPLORE SHARED LOCATIONS
+# EXPLORE
 # ====================================
 
 def explore_locations_gui():
 
     output_text.delete("1.0", tk.END)
 
-    location_search = location_entry.get().lower()
-
-    theme_search = theme_entry.get().lower()
-
-    rating_search = rating_entry.get().lower()
-
-    description_search = description_entry.get().lower()
-
-    found = False
-
     try:
 
-        with open("shared_logs.txt", "r") as file:
+        with open(os.path.join(BASE_DIR, "shared_logs.txt"), "r") as file:
 
             for line in file:
 
-                parts = line.strip().split(",")
-
-                if len(parts) < 5:
-                    continue
-
-                location, theme, rating, description, image = parts
-
-                location_lower = location.lower()
-
-                theme_lower = theme.lower()
-
-                rating_lower = str(rating).lower()
-
-                description_lower = description.lower()
-
-                match = True
-
-                if location_search != "":
-
-                    if location_search not in location_lower:
-
-                        match = False
-
-                if theme_search != "":
-
-                    if theme_search not in theme_lower:
-
-                        match = False
-
-                if rating_search != "":
-
-                    if rating_search not in rating_lower:
-
-                        match = False
-
-                if description_search != "":
-
-                    if description_search not in description_lower:
-
-                        match = False
-
-                if match:
-
-                    found = True
-
-                    output_text.insert(
-                        tk.END,
-                        f"""
-🌍 Shared Community Log
-
-📍 Location: {location}
-
-📸 Theme: {theme}
-
-⭐ Rating: {rating}
-
-📝 Description: {description}
-
-🖼️ Image: {image}
-
-----------------------------------------
-"""
-                    )
-
-        if not found:
-
-            output_text.insert(
-                tk.END,
-                "No matching shared logs found."
-            )
+                output_text.insert(
+                    tk.END,
+                    f"{line}\n"
+                )
 
     except FileNotFoundError:
 
@@ -827,7 +886,7 @@ def explore_locations_gui():
 
 
 # ====================================
-# ADD COMMENT
+# COMMENTS
 # ====================================
 
 def add_comment_gui():
@@ -851,19 +910,41 @@ def add_comment_gui():
 
     output_text.insert(
         tk.END,
-        "💬 Comment Added Successfully!\n\n"
+        "💬 Community Comments\n\n"
     )
 
     try:
 
-        with open("comments.txt", "r") as file:
+        with open(os.path.join(BASE_DIR, "comments.txt"), "r") as file:
 
-            for line in file:
+            comments = file.readlines()
+
+            if len(comments) == 0:
 
                 output_text.insert(
                     tk.END,
-                    f"{line}\n"
+                    "No comments yet."
                 )
+
+            else:
+
+                for line in comments:
+
+                    if ":" in line:
+
+                        location_name, user_comment = line.strip().split(":", 1)
+
+                        output_text.insert(
+                            tk.END,
+                            f"""
+📍 {location_name}
+
+💭 "{user_comment}"
+
+────────────────────────────
+
+"""
+                        )
 
     except FileNotFoundError:
 
@@ -871,115 +952,13 @@ def add_comment_gui():
             tk.END,
             "No comments found."
         )
-
-
 # ====================================
-# BUTTON FRAME
+# START APP
 # ====================================
 
-button_frame = tk.Frame(
-    scrollable_frame,
-    bg="#f4f1ea"
+window.after(
+    100,
+    resize_background
 )
-
-button_frame.pack(pady=20)
-
-
-# ====================================
-# BUTTON STYLE
-# ====================================
-
-style = ttk.Style()
-
-style.theme_use("clam")
-
-style.configure(
-    "Custom.TButton",
-    background="#457b9d",
-    foreground="white",
-    font=("Helvetica", 11, "bold"),
-    padding=10
-)
-
-
-# ====================================
-# BUTTONS
-# ====================================
-
-add_button = ttk.Button(
-    button_frame,
-    text="Add Log",
-    style="Custom.TButton",
-    command=add_log_gui
-)
-
-add_button.grid(row=0, column=0, padx=10)
-
-view_button = ttk.Button(
-    button_frame,
-    text="View Logs",
-    style="Custom.TButton",
-    command=view_logs_gui
-)
-
-view_button.grid(row=0, column=1, padx=10)
-
-analyze_button = ttk.Button(
-    button_frame,
-    text="Analyze",
-    style="Custom.TButton",
-    command=analyze_logs_gui
-)
-
-analyze_button.grid(row=0, column=2, padx=10)
-
-explore_button = ttk.Button(
-    button_frame,
-    text="Explore",
-    style="Custom.TButton",
-    command=explore_locations_gui
-)
-
-explore_button.grid(row=0, column=3, padx=10)
-
-comment_button = ttk.Button(
-    button_frame,
-    text="Add Comment",
-    style="Custom.TButton",
-    command=add_comment_gui
-)
-
-comment_button.grid(row=0, column=4, padx=10)
-
-image_button = ttk.Button(
-    button_frame,
-    text="Choose Photo",
-    style="Custom.TButton",
-    command=choose_image
-)
-
-image_button.grid(row=0, column=5, padx=10)
-
-
-# ====================================
-# MOUSE WHEEL SCROLL
-# ====================================
-
-def _on_mousewheel(event):
-
-    main_canvas.yview_scroll(
-        int(-1 * (event.delta / 120)),
-        "units"
-    )
-
-main_canvas.bind_all(
-    "<MouseWheel>",
-    _on_mousewheel
-)
-
-
-# ====================================
-# RUN APP
-# ====================================
 
 window.mainloop()
